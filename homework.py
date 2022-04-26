@@ -88,13 +88,7 @@ def get_api_answer(current_timestamp):
 
 def check_response(response):
     """Проверка данных ответа."""
-    # Отработка замечания
-    if isinstance(type(response), dict):
-        message = 'ответ пришел не в виде словаря.'
-        raise TypeError(message)
-    # Понимаю, что задвоение
-    # Но автотест не пускает без текста ниже
-    if type(response) != dict:
+    if not isinstance(response, dict):
         message = 'ответ пришел не в виде словаря.'
         raise TypeError(message)
     if 'homeworks' and 'current_date' not in response:
@@ -105,13 +99,7 @@ def check_response(response):
     except CheckNotPassed as error:
         message = f'отсутствие ожидаемых ключей в ответе API: {error}'
         raise CheckNotPassed(message)
-    # Отработка замечания
-    if isinstance(type(homework), list):
-        message = 'Передан не список.'
-        raise TypeError(message)
-    # Понимаю, что задвоение
-    # Но автотест не пускает без текста ниже
-    if type(homework) != list:
+    if not isinstance(homework, list):
         message = 'Передан не список.'
         raise TypeError(message)
     return homework
