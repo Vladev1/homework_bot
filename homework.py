@@ -1,4 +1,6 @@
+from http import HTTPStatus
 import os
+import sys
 import time
 import requests
 import logging
@@ -17,6 +19,7 @@ TELEGRAM_TOKEN = os.getenv('TELEGRAM_TOKEN')
 TELEGRAM_CHAT_ID = os.getenv('TELEGRAM_CHAT_ID')
 
 RETRY_TIME = 600
+LAST_CHECK = 599
 ENDPOINT = 'https://practicum.yandex.ru/api/user_api/homework_statuses/'
 HEADERS = {'Authorization': f'OAuth {PRACTICUM_TOKEN}'}
 
@@ -57,7 +60,7 @@ def send_message(bot, message):
     try:
         logging.info('Сообщение пользователю {TELEGRAM_CHAT_ID} отправляется')
         sending = bot.send_massage(TELEGRAM_CHAT_ID, message)
-        if sending.status_code != 200:
+        if sending.status_code != HTTPStatus.OK:
             raise MassageNotSent
     except MassageNotSent as error:
         MassageNotSent('Сообщения пользователю {TELEGRAM_CHAT_ID} '
@@ -71,19 +74,17 @@ def get_api_answer(current_timestamp):
     """Проверка допустпонсти API."""
     try:
         timestamp = current_timestamp or int(time.time())
-        needed_response = 200
         params = {'from_date': timestamp}
         response = requests.get(ENDPOINT,
                                 headers=HEADERS,
                                 params=params)
-        if response.status_code != needed_response:
+        if response.status_code != HTTPStatus.OK:
             raise HTTPError
     except HTTPError:
         message = f'ошибочный статус ответа по API: {response.status_code}'
         logging.error(message)
         raise HTTPError(message)
-    else:
-        return response.json()
+    return response.json()
 
 
 def check_response(response):
@@ -117,9 +118,7 @@ def parse_status(homework):
         raise WrongParseStatus(message)
     if homework_name == '':
         return None
-
     verdict = HOMEWORK_VERDICTS[homework_status]
-
     return f'Изменился статус проверки работы "{homework_name}". {verdict}'
 
 
@@ -147,11 +146,11 @@ def check_tokens():
 def main():
     """Основная логика работы бота."""
     current_timestamp = int(time.time())
-    check_tokens()
-    last_check = 599
+    if not check_tokens():
+        sys.exit(0)
     while True:
         try:
-            current_timestamp = {'from_date': current_timestamp - last_check}
+            current_timestamp = {'from_date': current_timestamp - LAST_CHECK}
             get = get_api_answer(current_timestamp)
             check = check_response(get)
             parse = parse_status(check[0])
@@ -159,8 +158,6 @@ def main():
         except Exception as error:
             message = f'Сбой в работе программы: {error}'
             logging.error(message)
-        else:
-            return None
         finally:
             time.sleep(RETRY_TIME)
 
