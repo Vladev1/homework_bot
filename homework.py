@@ -1,4 +1,3 @@
-from http import HTTPStatus
 import os
 import sys
 import time
@@ -9,7 +8,9 @@ from dotenv import load_dotenv
 
 from telegram import Bot
 
+from http import HTTPStatus
 from urllib.error import HTTPError
+
 
 load_dotenv()
 
