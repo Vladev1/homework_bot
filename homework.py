@@ -60,21 +60,20 @@ def send_message(bot, message):
     """Отправка сообщения о проверке."""
     try:
         logging.info('Сообщение пользователю {TELEGRAM_CHAT_ID} отправляется')
-        sending = bot.send_massage(TELEGRAM_CHAT_ID, message)
-        if sending.status_code != HTTPStatus.OK:
+        sending = bot.send_message(TELEGRAM_CHAT_ID, message)
+        if not sending:
             raise MassageNotSent
     except MassageNotSent as error:
         MassageNotSent('Сообщения пользователю {TELEGRAM_CHAT_ID} '
                        f'не отправлено. Причина: {error}')
     else:
         logging.info('Сообщение пользователю {TELEGRAM_CHAT_ID} отправлено')
-        return sending
 
 
 def get_api_answer(current_timestamp):
     """Проверка допустпонсти API."""
     try:
-        timestamp = current_timestamp or int(time.time())
+        timestamp = current_timestamp
         params = {'from_date': timestamp}
         response = requests.get(ENDPOINT,
                                 headers=HEADERS,
@@ -146,16 +145,15 @@ def check_tokens():
 
 def main():
     """Основная логика работы бота."""
-    current_timestamp = int(time.time())
+    current_timestamp = int(time.time()) - LAST_CHECK
     if not check_tokens():
         sys.exit(0)
     while True:
         try:
-            current_timestamp = {'from_date': current_timestamp - LAST_CHECK}
             get = get_api_answer(current_timestamp)
             check = check_response(get)
             parse = parse_status(check[0])
-            send_message(Bot(token=TELEGRAM_TOKEN), parse)
+            return send_message(Bot(token=TELEGRAM_TOKEN), parse)
         except Exception as error:
             message = f'Сбой в работе программы: {error}'
             logging.error(message)
